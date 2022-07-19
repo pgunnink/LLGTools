@@ -19,19 +19,19 @@ struct Particle
 end
 
 
-function generateLatticeShape(L::LatticeDescription, shape)    
+function generateLatticeShape(L::LatticeDescription, shape)
     d = length(L.primitiveVectors[1]) # dimension 
-    
+
     inside = zeros(d)
-    
+
     res = Dict{Tuple,Vector{Atom}}()
     # you need to add the (0,0) still!
     n = 0
     # ring = collect(Iterators.flatten([x for x in Iterators.product([(-1, 0, 1) for _ in 1:d]...)]))
-    
+
     inside_shape = true
     while inside_shape
-        ring = [x for x in Iterators.product([(-n:n) for _ in 1:d]...) if (n in x || -n in x)]
+        ring = [x for x in Iterators.product([(-n:n) for _ = 1:d]...) if (n in x || -n in x)]
         inside_shape = false
         for i ∈ ring
             pos = inside + sum(i .* L.primitiveVectors)
@@ -53,11 +53,11 @@ end
 
 
 
-function generateLatticeShape(L::LatticeDescription, shape, region)    
+function generateLatticeShape(L::LatticeDescription, shape, region)
     d = length(L.primitiveVectors[1]) # dimension 
-    
+
     inside = zeros(d)
-    
+
     res = Dict{Tuple,Vector{Atom}}()
     n = 0
 
@@ -75,17 +75,20 @@ function generateLatticeShape(L::LatticeDescription, shape, region)
         if !isempty(uc_atoms)
             res[i] = uc_atoms
         end
-        
+
         n += 1
     end
     res
 end
 
 function absPositionsParticle(p::Particle, l::LatticeDescription)
-    pos = sum(p.UC .* l.primitiveVectors)
     at = p.atom
+    # pos = zeros(length(l.basisAtoms[at]))
+    pos = sum(p.UC .* l.primitiveVectors)
     l.basisAtoms[at] .+ pos
+
 end
+
 
 function positionsLattice(unit_cells::Dict{Tuple,Vector{Atom}}, L::LatticeDescription)
     # takes a dictionary of unit cells and converts it to explicit positions
@@ -94,7 +97,7 @@ function positionsLattice(unit_cells::Dict{Tuple,Vector{Atom}}, L::LatticeDescri
     mapping = mappingAtoms(unit_cells)
     mapping_index = Dict{Atom,Vector}()
     for (partic, ind) in mapping
-        
+
         pos = sum(partic.UC .* L.primitiveVectors)
         at = partic.atom
         absolute_at_pos = L.basisAtoms[at] .+ pos
@@ -102,10 +105,10 @@ function positionsLattice(unit_cells::Dict{Tuple,Vector{Atom}}, L::LatticeDescri
             push!(positions[at], absolute_at_pos)
             push!(mapping_index[at], ind)
         else
-            positions[at] =  [absolute_at_pos]
-            mapping_index[at] =  [ind]
+            positions[at] = [absolute_at_pos]
+            mapping_index[at] = [ind]
         end
-        
+
     end
     positions, mapping_index
 end
@@ -132,9 +135,9 @@ countAtoms(unit_cells::Dict{Tuple,Vector{Atom}}) = length(mappingAtoms(unit_cell
 function coupleNN(unit_cells::Dict{Tuple,Vector{Atom}}, coupling)
     # coupling should be f(at1, at2, direction)
     d = length(first(keys(unit_cells)))
-    nn_list = [x for x in Iterators.product([(-1:1) for _ in 1:d]...) if (1 in x || -1 in x || all(y -> y == 0., x))]
+    nn_list = [x for x in Iterators.product([(-1:1) for _ = 1:d]...) if (1 in x || -1 in x || all(y -> y == 0.0, x))]
 
-    
+
     mapping = mappingAtoms(unit_cells)
     N = length(mapping)
     res = zeros(N, N)
@@ -144,9 +147,39 @@ function coupleNN(unit_cells::Dict{Tuple,Vector{Atom}}, coupling)
             index1 = mapping[Particle(at1, ind)]
             for nn_pos in nn_list
                 if (ind .+ nn_pos) in keys(unit_cells)
-                    for at2 in unit_cells[ind .+ nn_pos]
+                    for at2 in unit_cells[ind.+nn_pos]
                         index2 = mapping[Particle(at2, ind .+ nn_pos)]
                         res[index1, index2] = coupling(at1, at2, nn_pos)
+                    end
+                end
+            end
+        end
+    end
+    res
+end
+
+function coupleDirectionally(unit_cells::Dict{Tuple,Vector{Atom}}, l::LatticeDescription, coupling)
+    # coupling should be f(at1, at2, direction), where direction is a vector pointing from at1 to at2
+    d = length(first(keys(unit_cells)))
+    nn_list = [x for x in Iterators.product([(-1:1) for _ = 1:d]...) if (1 in x || -1 in x || all(y -> y == 0.0, x))]
+
+
+    mapping = mappingAtoms(unit_cells)
+    N = length(mapping)
+    res = zeros(N, N)
+
+    for (ind, uc_atoms) in unit_cells
+        for at1 in uc_atoms
+            index1 = mapping[Particle(at1, ind)]
+            for nn_pos in nn_list
+                if (ind .+ nn_pos) in keys(unit_cells)
+                    for at2 in unit_cells[ind.+nn_pos]
+                        if nn_pos == (0, 0) && at1 == at2
+                            continue
+                        end
+                        index2 = mapping[Particle(at2, ind .+ nn_pos)]
+                        direction = absPositionsParticle(Particle(at2, ind .+ nn_pos), l) .- absPositionsParticle(Particle(at1, ind), l)
+                        res[index1, index2] = coupling(at1, at2, direction)
                     end
                 end
             end

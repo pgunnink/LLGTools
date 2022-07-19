@@ -26,6 +26,33 @@ function dmi_interaction_honeycomb(a, b, p)
         return 0
     end
     if a == b
+        if a == Atom(2)
+            m = 1
+        else
+            m = -1
+        end
+        if p != (0, 0)
+            # if a == Atom(1)
+            #     return 1
+            # else
+            #     return -1
+            # end
+            if p == (1, 0) || p == (0, -1) || p == (-1, 1)
+                return 1m
+            elseif p == (-1, 0) || p == (0, 1) || p == (1, -1)
+                return -1m
+            end
+        end
+    end
+    return 0
+end
+
+
+function dmi_interaction_honeycomb_old(a, b, p)
+    if p == (1, 1) || p == (-1, -1)
+        return 0
+    end
+    if a == b
         if p != (0, 0)
             # if a == Atom(1)
             #     return 1
