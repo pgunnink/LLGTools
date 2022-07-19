@@ -28,7 +28,7 @@ export initBoltzmann
 
 include("lattice.jl")
 # include("diffeq.jl")
-# include("plotting.jl")
+include("plotting.jl")
 include("graphene.jl")
 include("diffeq_toolkit.jl")
 # include("custom_cache.jl")
