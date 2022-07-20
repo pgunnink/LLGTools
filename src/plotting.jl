@@ -7,7 +7,7 @@ function positionsPlottingXY(unit_cells, l::LatticeDescription)
     res = [[0.0, 0.0] for _ in 1:length(mappingAtoms(unit_cells))]
     for x in keys(l.basisAtoms)
         for i = 1:length(positions[x])
-            res[mapping_index[x][i], :] = positions[x][i]
+            res[mapping_index[x][i]] = positions[x][i]
         end
     end
     return res
